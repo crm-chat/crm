@@ -468,7 +468,7 @@
         "FMC_MainRecurringRent": "الباقة الاساسية",
         "PSTN_MainRecurringRent": "باقة الخط الارضي",
         "FMC_RecurringRent": "خدمات العائلة / خصومات",
-        "POS_AdditionalRecurringRent": "باقة إضافية للموبايل (Nitro)",
+        "POS_AdditionalRecurringRent": "باقات إضافية متجددة",
         "VoiceMOLocalOffNet": "مكالمات خارج الباقة لأرقام خارج شبكة وي",
         "VoiceMOLocalOnNet": "مكالمات خارج الباقة لأرقام شبكة وي",
         "POS_AdditionalOneOffRent": "انترنت خارج الباقة كل 200 ميجا =5ج",
@@ -683,19 +683,21 @@
 
             let arabicDesc = getArabicDescription(row.chargeCode, row.offeringName);
             
-            let masterKey = row.chargeCode;
-            if (row.chargeCode === "BB_RecurringRent" && arabicDesc === "باقة إضافية للإنترنت الأرضي") {
-                masterKey = "BB_AdditionalOneOffRent";
-            }
+            // نفس الكود ممكن يكون له أكتر من وصف عربي مختلف حسب Offering Name
+            // (مثال: POS_AdditionalOneOffRent ممكن يكون 200 ميجا أو Nitro أو Gaming/PS)
+            // فلازم كل وصف مختلف ياخد خانة منفصلة في الملخص بدل ما يتجمعوا في خانة واحدة غلط
+            let masterKey = row.chargeCode + "||" + (arabicDesc || "");
 
             if(!tempSummaryMap[masterKey]) {
                 tempSummaryMap[masterKey] = {
                     code: row.chargeCode,
                     label: arabicDesc || null,
-                    amount: 0
+                    amount: 0,
+                    count: 0
                 };
             }
             tempSummaryMap[masterKey].amount += row.totalOut;
+            tempSummaryMap[masterKey].count += row.sessions.length;
 
             let chargeBr = "", taxBr = "", discountBr = "", outBr = "";
             if(row.sessions.length > 1) {
@@ -733,10 +735,11 @@
         
         globalSummaryData.forEach(item => {
             let formattedAmt = formatMoneyArabic(item.amount);
+            let countSuffix = item.count > 1 ? ` (عدد ${item.count})` : "";
             if(item.label) {
-                displayHTML += `${item.label}: ${formattedAmt}<br><p>&nbsp;</p>`;
+                displayHTML += `${item.label}${countSuffix}: ${formattedAmt}<br><p>&nbsp;</p>`;
             } else {
-                displayHTML += `<span style="color:#ef4444; font-weight:bold;">: ${formattedAmt}</span><br><p>&nbsp;</p>`;
+                displayHTML += `<span style="color:#ef4444; font-weight:bold;">${countSuffix}: ${formattedAmt}</span><br><p>&nbsp;</p>`;
             }
         });
         
@@ -752,10 +755,11 @@
 
         globalSummaryData.forEach((item, index) => {
             let formattedAmt = formatMoneyArabic(item.amount);
+            let countSuffix = item.count > 1 ? ` (عدد ${item.count})` : "";
             if(item.label) {
-                textToCopy += `${item.label}: ${formattedAmt}`;
+                textToCopy += `${item.label}${countSuffix}: ${formattedAmt}`;
             } else {
-                textToCopy += `: ${formattedAmt}`;
+                textToCopy += `${countSuffix}: ${formattedAmt}`;
             }
             
             if(index < globalSummaryData.length - 1) {
