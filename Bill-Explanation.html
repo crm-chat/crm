@@ -578,13 +578,27 @@
     }
 
     function getArabicDescription(chargeCode, offeringName) {
-        let nameLower = offeringName.toLowerCase();
+        let nameLower = (offeringName || "").toLowerCase();
         if (chargeCode === "BB_RecurringRent") {
             if (nameLower.includes("top-up") && nameLower.includes("renew monthly")) {
                 return "باقة إضافية للإنترنت الأرضي";
             }
             return "رسوم الراوتر الشهرية";
         }
+
+        if (chargeCode === "POS_AdditionalOneOffRent") {
+            // حالة 1: باقة Gaming أو PS (لو الاسم فيه كلمة gaming أو ps كلمة منفصلة)
+            if (nameLower.includes("gaming") || /\bps\b/.test(nameLower)) {
+                return "باقة إضافية Gaming / PS";
+            }
+            // حالة 2: باقة إضافية موبايل انترنت (زي Nitro Post 150 Onetime)
+            if (nameLower.includes("nitro") || nameLower.includes("onetime") || nameLower.includes("post")) {
+                return "باقة إضافية للموبايل انترنت";
+            }
+            // حالة 3 (الافتراضي): الاسم بيكون نفس اسم النظام (زي We Gold) = انترنت خارج الباقة
+            return "انترنت خارج الباقة كل 200 ميجا =5ج";
+        }
+
         return codeDefinitions[chargeCode];
     }
 
